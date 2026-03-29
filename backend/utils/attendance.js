@@ -10,6 +10,7 @@ const ATTENDANCE_REASON = Object.freeze({
   LOCATION_UNRELIABLE: "location_unreliable",
   LOCATION_STALE: "location_stale",
   LOCATION_TAMPERING: "location_tampering",
+  AUTO_ABSENT: "auto_absent",
 });
 
 function toNumber(value) {

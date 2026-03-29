@@ -11,6 +11,7 @@ import MyAttendancePage from "./pages/MyAttendancePage";
 import AdminDashboard from "./pages/AdminDashboard";
 import UserManagementPage from "./pages/UserManagementPage";
 import AttendanceTablePage from "./pages/AttendanceTablePage";
+import CutoffSettingsPage from "./pages/CutoffSettingsPage";
 
 // ---- Protected Route Wrapper ----
 function ProtectedRoute({ children, adminOnly = false }) {
@@ -49,6 +50,7 @@ function AppRoutes() {
       <Route path="/admin" element={<ProtectedRoute adminOnly><AdminDashboard /></ProtectedRoute>} />
       <Route path="/admin/users" element={<ProtectedRoute adminOnly><UserManagementPage /></ProtectedRoute>} />
       <Route path="/admin/attendance" element={<ProtectedRoute adminOnly><AttendanceTablePage /></ProtectedRoute>} />
+      <Route path="/admin/settings" element={<ProtectedRoute adminOnly><CutoffSettingsPage /></ProtectedRoute>} />
       <Route path="/" element={<Navigate to="/login" replace />} />
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>

@@ -9,6 +9,7 @@ export const ATTENDANCE_REASON = {
   LOCATION_UNRELIABLE: "location_unreliable",
   LOCATION_STALE: "location_stale",
   LOCATION_TAMPERING: "location_tampering",
+  AUTO_ABSENT: "auto_absent",
 };
 
 export function getStatusLabel(status) {
@@ -32,6 +33,8 @@ export function getReasonLabel(reason) {
       return "Stale GPS Reading";
     case ATTENDANCE_REASON.LOCATION_TAMPERING:
       return "Location Verification Failed";
+    case ATTENDANCE_REASON.AUTO_ABSENT:
+      return "Auto-Absent";
     default:
       return "";
   }
@@ -56,6 +59,8 @@ export function getReasonClasses(reason) {
     case ATTENDANCE_REASON.LOCATION_STALE:
     case ATTENDANCE_REASON.LOCATION_TAMPERING:
       return "status-chip status-chip-danger";
+    case ATTENDANCE_REASON.AUTO_ABSENT:
+      return "status-chip status-chip-neutral";
     default:
       return "status-chip status-chip-neutral";
   }

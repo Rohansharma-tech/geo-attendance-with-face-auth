@@ -163,6 +163,7 @@ export default function MarkAttendancePage() {
     record: null,
     marked: false,
     canRetry: true,
+    cutoffPassed: false,
   });
 
   const { user } = useAuth();
@@ -188,6 +189,13 @@ export default function MarkAttendancePage() {
         if (todayRes.data.status === ATTENDANCE_STATUS.PRESENT) {
           setStage("done");
           setStatusMessage(`Attendance already marked at ${todayRes.data.record?.time || "--:--"}.`);
+          return;
+        }
+
+        // Cutoff has passed — attendance window is locked for today
+        if (todayRes.data.cutoffPassed) {
+          setStage("blocked");
+          setStatusMessage("The attendance window has closed for today. You were automatically marked absent at the cutoff time.");
           return;
         }
 
@@ -351,6 +359,7 @@ export default function MarkAttendancePage() {
       setStatusMessage("Location validated. Complete face verification to submit attendance.");
     } catch (err) {
       const responseData = err.response?.data;
+      const isCutoffPassed = responseData?.code === "cutoff_passed";
       const lowAccuracyMessage =
         responseData?.code === ATTENDANCE_REASON.LOCATION_UNRELIABLE
           ? buildLowAccuracyMessage(responseData, locationPayload?.accuracy)
@@ -361,7 +370,12 @@ export default function MarkAttendancePage() {
         getCameraErrorMessage(err) ||
         "Unable to validate attendance.";
 
-      if (responseData?.message === "You are not in the allowed location") {
+      if (isCutoffPassed) {
+        stopCamera();
+        setTodayState((prev) => ({ ...prev, canRetry: false, cutoffPassed: true, record: responseData.record || prev.record }));
+        setStage("blocked");
+        setStatusMessage(responseData.detail || message);
+      } else if (responseData?.message === "You are not in the allowed location") {
         handleBlockedAttempt(responseData);
       } else {
         setStage("error");
@@ -427,9 +441,15 @@ export default function MarkAttendancePage() {
       showToast("Attendance marked successfully.", "success");
     } catch (err) {
       const responseData = err.response?.data;
+      const isCutoffPassed = responseData?.code === "cutoff_passed";
       const message = responseData?.message || err.message || "Attendance submission failed.";
 
-      if (responseData?.message === "You are not in the allowed location") {
+      if (isCutoffPassed) {
+        stopCamera();
+        setTodayState((prev) => ({ ...prev, canRetry: false, cutoffPassed: true, record: responseData.record || prev.record }));
+        setStage("blocked");
+        setStatusMessage(responseData.detail || message);
+      } else if (responseData?.message === "You are not in the allowed location") {
         handleBlockedAttempt(responseData);
       } else if (responseData?.alreadyMarked) {
         stopCamera();
@@ -438,6 +458,7 @@ export default function MarkAttendancePage() {
           record: responseData.record || null,
           marked: true,
           canRetry: false,
+          cutoffPassed: false,
         });
         setStage("done");
         setStatusMessage(`Attendance already marked at ${responseData.record?.time || "--:--"}.`);
@@ -455,6 +476,14 @@ export default function MarkAttendancePage() {
   const resetFlow = () => {
     stopCamera();
     setLocationPayload(null);
+
+    // Don't allow reset if cutoff has passed — window is permanently closed for today
+    if (todayState.cutoffPassed) {
+      setStage("blocked");
+      setStatusMessage("The attendance window has closed for today. You were automatically marked absent at the cutoff time.");
+      return;
+    }
+
     setStage(todayState.status === ATTENDANCE_STATUS.ABSENT ? "blocked" : "idle");
     setStatusMessage(
       todayState.record?.reason === ATTENDANCE_REASON.OUTSIDE_LOCATION
@@ -548,10 +577,16 @@ export default function MarkAttendancePage() {
               ) : (
                 <button
                   onClick={startAttendanceFlow}
-                  disabled={busy || !modelsLoaded || todayState.status === ATTENDANCE_STATUS.PRESENT}
+                  disabled={busy || !modelsLoaded || todayState.status === ATTENDANCE_STATUS.PRESENT || todayState.cutoffPassed}
                   className="btn-primary w-full"
                 >
-                  {busy ? "Processing..." : todayState.status === ATTENDANCE_STATUS.PRESENT ? "Attendance completed" : "Start attendance"}
+                  {busy
+                    ? "Processing..."
+                    : todayState.status === ATTENDANCE_STATUS.PRESENT
+                      ? "Attendance completed"
+                      : todayState.cutoffPassed
+                        ? "Attendance window closed"
+                        : "Start attendance"}
                 </button>
               )}
             </div>

@@ -58,8 +58,28 @@ const attendanceSchema = new mongoose.Schema(
 
     reason: {
       type: String,
-      enum: [null, "outside_location", "location_unreliable", "location_stale", "location_tampering"],
+      enum: [
+        null,
+        "outside_location",
+        "location_unreliable",
+        "location_stale",
+        "location_tampering",
+        "auto_absent",
+      ],
       default: null,
+    },
+
+    // True when this record was created by the auto-absent cron job
+    autoMarked: {
+      type: Boolean,
+      default: false,
+    },
+
+    // True when an admin has manually approved/overridden this record.
+    // Auto-absent NEVER overwrites a record where this is true.
+    adminApproved: {
+      type: Boolean,
+      default: false,
     },
 
     markedAt: {

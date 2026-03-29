@@ -61,6 +61,7 @@ export default function Navbar() {
     { to: "/admin", label: "Dashboard", mobileLabel: "Home", shortLabel: "DB" },
     { to: "/admin/users", label: "Users", mobileLabel: "Users", shortLabel: "US" },
     { to: "/admin/attendance", label: "Attendance", mobileLabel: "Records", shortLabel: "AR" },
+    { to: "/admin/settings", label: "Settings", mobileLabel: "Settings", shortLabel: "ST" },
   ];
 
   const links = user?.role === "admin" ? adminLinks : userLinks;

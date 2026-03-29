@@ -47,6 +47,8 @@ function serializeAttendanceRecord(record) {
     locationTimestamp: record.locationTimestamp,
     status: record.status,
     reason: record.reason,
+    autoMarked: record.autoMarked ?? false,
+    adminApproved: record.adminApproved ?? false,
     markedAt: record.markedAt,
     createdAt: record.createdAt,
     updatedAt: record.updatedAt,
@@ -118,6 +120,17 @@ router.post("/location-check", async (req, res) => {
       });
     }
 
+    // Block if the auto-absent job has already finalised today's record
+    if (existingRecord?.autoMarked === true) {
+      return res.status(403).json({
+        allowed: false,
+        code: "cutoff_passed",
+        message: "The attendance window has closed for today.",
+        detail: "You were automatically marked absent at the cutoff time. Please contact your administrator.",
+        record: serializeAttendanceRecord(existingRecord),
+      });
+    }
+
     const distanceMeters = Math.round(
       haversineDistance(
         validation.location.latitude,
@@ -182,6 +195,16 @@ router.post("/mark", async (req, res) => {
       });
     }
 
+    // Block if the auto-absent job has already finalised today's record
+    if (existingRecord?.autoMarked === true) {
+      return res.status(403).json({
+        code: "cutoff_passed",
+        message: "The attendance window has closed for today.",
+        detail: "You were automatically marked absent at the cutoff time. Please contact your administrator.",
+        record: serializeAttendanceRecord(existingRecord),
+      });
+    }
+
     const distanceMeters = Math.round(
       haversineDistance(
         validation.location.latitude,
@@ -239,11 +262,16 @@ router.get("/today", async (req, res) => {
   try {
     const dateParts = getDateTimeParts();
     const record = await Attendance.findOne({ userId: req.user.id, date: dateParts.date });
+    // canRetry is false when: already PRESENT, or auto-absent (cutoff has passed)
+    const cutoffPassed = record?.autoMarked === true;
+    const alreadyPresent = record?.status === ATTENDANCE_STATUS.PRESENT;
+
     return res.json({
       hasRecord: Boolean(record),
-      marked: record?.status === ATTENDANCE_STATUS.PRESENT,
+      marked: alreadyPresent,
       status: record?.status || "not_marked",
-      canRetry: !record || record.status !== ATTENDANCE_STATUS.PRESENT,
+      canRetry: !record || (!alreadyPresent && !cutoffPassed),
+      cutoffPassed,
       record: serializeAttendanceRecord(record),
     });
   } catch (err) {

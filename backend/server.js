@@ -25,6 +25,7 @@ const authRoutes = require("./routes/auth");
 const userRoutes = require("./routes/users");
 const attendanceRoutes = require("./routes/attendance");
 const settingsRoutes = require("./routes/settings");
+const { initCutoffScheduler } = require("./services/autoCutoffScheduler");
 
 // Mount routes at their base paths
 app.use("/api/auth", authRoutes);         // Login, register
@@ -48,6 +49,9 @@ mongoose
 
     // Auto-create a default admin user if none exists
     await createDefaultAdmin();
+
+    // Start the auto-absent cutoff scheduler if configured
+    await initCutoffScheduler();
 
     app.listen(PORT, () => {
       console.log(`🚀 Server running on http://localhost:${PORT}`);

@@ -390,6 +390,9 @@ export default function AttendanceTablePage() {
                     <div className="flex flex-wrap gap-2">
                       <AttendanceStatusBadge status={record.status} />
                       <AttendanceReasonBadge reason={record.reason} />
+                      {record.autoMarked && (
+                        <span className="status-chip status-chip-neutral">Auto-Marked</span>
+                      )}
                     </div>
                   </div>
                 </div>
